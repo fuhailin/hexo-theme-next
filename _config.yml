@@ -185,8 +185,8 @@ social:
   #VK Group: https://vk.com/yourname || vk
   #StackOverflow: https://stackoverflow.com/yourname || stack-overflow
   #YouTube: https://youtube.com/yourname || youtube
-  Instagram: https://instagram.com/hailinfufu || instagram
-  Linkedin: https://www.linkedin.com/in/����-��-855633ab/ || linkedin
+  # Instagram: https://instagram.com/hailinfufu || instagram
+  Linkedin: https://www.linkedin.com/in/%E6%B5%B7%E6%9E%97-%E4%BB%98-855633ab/ || linkedin
   #Skype: skype:yourname?call|chat || skype
   CSDN: https://blog.csdn.net/u010412858 || csdn
 
@@ -549,12 +549,12 @@ valine:
 
 # Support for LiveRe comments system.
 # You can get your uid from https://livere.com/insight/myCode (General web site)
-# livere_uid: MTAyMC80MjE1MS8xODY5OA==
+livere_uid: MTAyMC80MjE1MS8xODY5OA==
 
 # Gitment
 # Introduction: https://github.com/imsun/gitment
 gitment:
-  enable: true
+  enable: false
   mint: true # RECOMMEND, A mint on Gitment, to support count, language and proxy_gateway
   count: true # Show comments count in post meta area
   lazy: false # Comments lazy loading with a button
