@@ -52,8 +52,13 @@
               <span class="post-meta-divider">|</span>
           {% endif %}
 
-          {%- if theme.post_meta.created_at %}
-            <span class="post-meta-item">
+            {% if post.top %}
+            <i class="fa fa-thumb-tack"></i>
+            <font color=7D26CD>Top</font>
+            <span class="post-meta-divider">|</span>
+            {% endif %}
+
+            {% if theme.post_meta.created_at %}
               <span class="post-meta-item-icon">
                 <i class="fa fa-calendar-o"></i>
               </span>
