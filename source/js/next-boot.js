@@ -1,4 +1,4 @@
-/* global NexT, CONFIG */
+/* global NexT, CONFIG, Velocity */
 
 NexT.boot = {};
 
@@ -9,41 +9,57 @@ NexT.boot.registerEvents = function() {
 
   // Mobile top menu bar.
   document.querySelector('.site-nav-toggle button').addEventListener('click', () => {
-    var $siteNav = $('.site-nav');
+    var siteNav = document.querySelector('.site-nav');
     var ON_CLASS_NAME = 'site-nav-on';
-    var isSiteNavOn = $siteNav.hasClass(ON_CLASS_NAME);
-    var animateAction = isSiteNavOn ? 'slideUp' : 'slideDown';
-    var animateCallback = isSiteNavOn ? 'removeClass' : 'addClass';
+    var animateAction = siteNav.classList.contains(ON_CLASS_NAME) ? 'slideUp' : 'slideDown';
 
-    $siteNav.stop()[animateAction]('fast', () => {
-      $siteNav[animateCallback](ON_CLASS_NAME);
-    });
+    if (typeof Velocity === 'function') {
+      Velocity(siteNav, animateAction, {
+        duration: 200,
+        complete: function() {
+          siteNav.classList.toggle(ON_CLASS_NAME);
+        }
+      });
+    } else {
+      siteNav.classList.toggle(ON_CLASS_NAME);
+    }
   });
 
   var TAB_ANIMATE_DURATION = 200;
-  $('.sidebar-nav li').on('click', event => {
-    var item = $(event.currentTarget);
-    var activeTabClassName = 'sidebar-nav-active';
-    var activePanelClassName = 'sidebar-panel-active';
+  document.querySelectorAll('.sidebar-nav li').forEach((element, index) => {
+    element.addEventListener('click', event => {
+      var item = event.currentTarget;
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.classList.contains(activeTabClassName)) return;
 
-    var target = $('.' + item.data('target'));
-    if (item.hasClass(activeTabClassName)) {
-      target.find('.motion-element').css({ opacity: 1 });
-      return;
-    }
-    var currentTarget = target.siblings('.sidebar-panel');
-    currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, () => {
-      // Prevent adding TOC to Overview if Overview was selected when close & open sidebar.
-      currentTarget.removeClass(activePanelClassName);
-      target
-        .stop()
-        .css({ opacity: 0 })
-        .addClass(activePanelClassName)
-        .animate({ opacity: 1 }, TAB_ANIMATE_DURATION);
+      var targets = document.querySelectorAll('.sidebar-panel');
+      var target = targets[index];
+      var currentTarget = targets[1 - index];
+      window.anime({
+        targets : currentTarget,
+        duration: TAB_ANIMATE_DURATION,
+        easing  : 'linear',
+        opacity : 0,
+        complete: () => {
+          // Prevent adding TOC to Overview if Overview was selected when close & open sidebar.
+          currentTarget.classList.remove(activePanelClassName);
+          target.style.opacity = 0;
+          target.classList.add(activePanelClassName);
+          window.anime({
+            targets : target,
+            duration: TAB_ANIMATE_DURATION,
+            easing  : 'linear',
+            opacity : 1
+          });
+        }
+      });
+
+      [...item.parentNode.children].forEach(element => {
+        element.classList.remove(activeTabClassName);
+      });
+      item.classList.add(activeTabClassName);
     });
-
-    item.siblings().removeClass(activeTabClassName);
-    item.addClass(activeTabClassName);
   });
 
   window.addEventListener('resize', NexT.utils.initSidebarDimension);
@@ -73,25 +89,8 @@ NexT.boot.refresh = function() {
   NexT.utils.registerTabsTag();
   NexT.utils.registerActiveMenuItem();
   NexT.utils.registerSidebarTOC();
-
-  $(':not(.gist) table').wrap('<div class="table-container"></div>');
-  document.querySelectorAll('iframe').forEach(element => {
-    var SUPPORTED_PLAYERS = [
-      'www.youtube.com',
-      'player.vimeo.com',
-      'player.youku.com',
-      'player.bilibili.com',
-      'www.tudou.com'
-    ];
-    var pattern = new RegExp(SUPPORTED_PLAYERS.join('|'));
-    if (!element.parentNode.matches('.video-container') && element.src.search(pattern) > 0) {
-      $(element).wrap('<div class="video-container"></div>');
-      var width = Number(element.width), height = Number(element.height);
-      if (width && height) {
-        element.parentNode.style.paddingTop = height / width * 100 + '%';
-      }
-    }
-  });
+  NexT.utils.wrapTableWithBox();
+  NexT.utils.registerVideoIframe();
 };
 
 NexT.boot.motion = function() {
@@ -113,4 +112,3 @@ window.addEventListener('DOMContentLoaded', () => {
   NexT.boot.refresh();
   NexT.boot.motion();
 });
-window.addEventListener('pjax:success', NexT.boot.refresh);

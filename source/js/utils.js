@@ -8,11 +8,10 @@ HTMLElement.prototype.outerHeight = function(flag) {
   return height;
 };
 
-HTMLElement.prototype.css = function(dict) {
-  for (var key in dict) {
-    this.style[key] = dict[key];
-  }
-  return this;
+HTMLElement.prototype.wrap = function(wrapper) {
+  this.parentNode.insertBefore(wrapper, this);
+  this.parentNode.removeChild(this);
+  wrapper.appendChild(this);
 };
 
 NexT.utils = {
@@ -68,16 +67,20 @@ NexT.utils = {
    * One-click copy code support.
    */
   registerCopyCode: function() {
-    $('.highlight').not('.gist .highlight').each((i, e) => {
-      function initButton(button) {
+    document.querySelectorAll('figure.highlight').forEach(e => {
+      const initButton = button => {
         if (CONFIG.copycode.style === 'mac') {
-          button.html('<i class="fa fa-clipboard"></i>');
+          button.innerHTML = '<i class="fa fa-clipboard"></i>';
         } else {
-          button.text(CONFIG.translation.copy_button);
+          button.innerText = CONFIG.translation.copy_button;
         }
-      }
-      var $button = $('<div>').addClass('copy-btn');
-      $button.on('click', event => {
+      };
+      const box = document.createElement('div');
+      box.classList.add('highlight-wrap');
+      e.wrap(box);
+      e.parentNode.insertAdjacentHTML('beforeend', '<div class="copy-btn"></div>');
+      var button = e.parentNode.querySelector('.copy-btn');
+      button.addEventListener('click', event => {
         var code = [...event.currentTarget.parentNode.querySelectorAll('.code .line')].map(element => {
           return element.innerText;
         }).join('\n');
@@ -88,7 +91,7 @@ NexT.utils = {
         ta.style.opacity = '0';
         ta.readOnly = true;
         ta.value = code;
-        document.body.appendChild(ta);
+        document.body.append(ta);
         const selection = document.getSelection();
         const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
         ta.select();
@@ -106,13 +109,42 @@ NexT.utils = {
         }
         document.body.removeChild(ta);
       });
-      $button.on('mouseleave', event => {
+      button.addEventListener('mouseleave', event => {
         setTimeout(() => {
-          initButton($(event.currentTarget));
+          initButton(event.target);
         }, 300);
       });
-      initButton($button);
-      $(e).wrap($('<div>').addClass('highlight-wrap')).after($button);
+      initButton(button);
+    });
+  },
+
+  wrapTableWithBox: function() {
+    document.querySelectorAll('table').forEach(table => {
+      const box = document.createElement('div');
+      box.className = 'table-container';
+      table.wrap(box);
+    });
+  },
+
+  registerVideoIframe: function() {
+    document.querySelectorAll('iframe').forEach(element => {
+      const SUPPORTED_PLAYERS = [
+        'www.youtube.com',
+        'player.vimeo.com',
+        'player.youku.com',
+        'player.bilibili.com',
+        'www.tudou.com'
+      ];
+      const pattern = new RegExp(SUPPORTED_PLAYERS.join('|'));
+      if (!element.parentNode.matches('.video-container') && element.src.search(pattern) > 0) {
+        const box = document.createElement('div');
+        box.className = 'video-container';
+        element.wrap(box);
+        let width = Number(element.width); let height = Number(element.height);
+        if (width && height) {
+          element.parentNode.style.paddingTop = (height / width * 100) + '%';
+        }
+      }
     });
   },
 
@@ -121,7 +153,7 @@ NexT.utils = {
     var backToTop = document.querySelector('.back-to-top');
     var readingProgressBar = document.querySelector('.reading-progress-bar');
     // For init back to top in sidebar if page was scrolled after page refresh.
-    $(window).on('load scroll', () => {
+    window.addEventListener('scroll', () => {
       var scrollPercent;
       if (backToTop || readingProgressBar) {
         var docHeight = document.querySelector('.container').offsetHeight;
@@ -140,7 +172,10 @@ NexT.utils = {
     });
 
     backToTop && backToTop.addEventListener('click', () => {
-      $(document.documentElement).animate({
+      window.anime({
+        targets  : document.documentElement,
+        duration : 500,
+        easing   : 'linear',
         scrollTop: 0
       });
     });
@@ -151,26 +186,28 @@ NexT.utils = {
    */
   registerTabsTag: function() {
     // Binding `nav-tabs` & `tab-content` by real time permalink changing.
-    $('.tabs ul.nav-tabs .tab').on('click', event => {
-      event.preventDefault();
-      // Prevent selected tab to select again.
-      if (!event.currentTarget.classList.contains('active')) {
-        // Add & Remove active class on `nav-tabs` & `tab-content`.
-        [...event.currentTarget.parentNode.children].forEach(item => {
-          item.classList.remove('active');
-        });
-        event.currentTarget.classList.add('active');
-        var tActive = event.currentTarget.querySelector('a').getAttribute('href');
-        tActive = document.querySelector(tActive);
-        [...tActive.parentNode.children].forEach(item => {
-          item.classList.remove('active');
-        });
-        tActive.classList.add('active');
-        // Trigger event
-        tActive.dispatchEvent(new Event('tabs:click', {
-          bubbles: true
-        }));
-      }
+    document.querySelectorAll('.tabs ul.nav-tabs .tab').forEach(tab => {
+      tab.addEventListener('click', event => {
+        event.preventDefault();
+        // Prevent selected tab to select again.
+        if (!event.currentTarget.classList.contains('active')) {
+          // Add & Remove active class on `nav-tabs` & `tab-content`.
+          [...event.currentTarget.parentNode.children].forEach(item => {
+            item.classList.remove('active');
+          });
+          event.currentTarget.classList.add('active');
+          var tActive = event.currentTarget.querySelector('a').getAttribute('href');
+          tActive = document.querySelector(tActive);
+          [...tActive.parentNode.children].forEach(item => {
+            item.classList.remove('active');
+          });
+          tActive.classList.add('active');
+          // Trigger event
+          tActive.dispatchEvent(new Event('tabs:click', {
+            bubbles: true
+          }));
+        }
+      });
     });
 
     window.dispatchEvent(new Event('tabs:register'));
@@ -191,8 +228,9 @@ NexT.utils = {
   registerActiveMenuItem: function() {
     document.querySelectorAll('.menu-item').forEach(element => {
       var target = element.querySelector('a[href]');
+      if (!target) return;
       var isSamePath = target.pathname === location.pathname || target.pathname === location.pathname.replace('index.html', '');
-      var isSubPath = target.pathname !== '/' && location.pathname.indexOf(target.pathname) === 0;
+      var isSubPath = target.pathname !== CONFIG.root && location.pathname.indexOf(target.pathname) === 0;
       if (target.hostname === location.hostname && (isSamePath || isSubPath)) {
         element.classList.add('menu-item-active');
       } else {
@@ -202,18 +240,6 @@ NexT.utils = {
   },
 
   registerSidebarTOC: function() {
-    var sidebarNav = document.querySelector('.sidebar-nav');
-    if (document.querySelector('.post-toc')) {
-      sidebarNav.style.display = '';
-      sidebarNav.classList.add('motion-element');
-      document.querySelector('.sidebar-nav-toc').click();
-    } else {
-      sidebarNav.style.display = 'none';
-      sidebarNav.classList.remove('motion-element');
-      document.querySelector('.sidebar-nav-overview').click();
-      return;
-    }
-
     const navItems = document.querySelectorAll('.post-toc li');
     const sections = [...navItems].map(element => {
       var link = element.querySelector('a.nav-link');
@@ -221,16 +247,18 @@ NexT.utils = {
       link.addEventListener('click', event => {
         event.preventDefault();
         var target = document.getElementById(event.currentTarget.getAttribute('href').replace('#', ''));
-        var offset = $(target).offset().top;
-
-        $(document.documentElement).stop().animate({
+        var offset = target.getBoundingClientRect().top + window.scrollY;
+        window.anime({
+          targets  : document.documentElement,
+          duration : 500,
+          easing   : 'linear',
           scrollTop: offset + 10
-        }, 500);
+        });
       });
       return document.getElementById(link.getAttribute('href').replace('#', ''));
     });
 
-    var $tocElement = $('.post-toc');
+    var tocElement = document.querySelector('.post-toc-wrap');
     function activateNavByIndex(target) {
       if (target.classList.contains('active-current')) return;
 
@@ -238,22 +266,55 @@ NexT.utils = {
         element.classList.remove('active', 'active-current');
       });
       target.classList.add('active', 'active-current');
-      $(target).parents('li').addClass('active');
-
+      var parent = target.parentNode;
+      while (!parent.matches('.post-toc')) {
+        if (parent.matches('li')) parent.classList.add('active');
+        parent = parent.parentNode;
+      }
       // Scrolling to center active TOC element if TOC content is taller then viewport.
-      $tocElement.scrollTop($(target).offset().top - $tocElement.offset().top + $tocElement.scrollTop() - ($tocElement.height() / 2));
+      window.anime({
+        targets  : tocElement,
+        duration : 200,
+        easing   : 'linear',
+        scrollTop: tocElement.scrollTop - (tocElement.offsetHeight / 2) + target.getBoundingClientRect().top - tocElement.getBoundingClientRect().top
+      });
     }
 
-    const intersectionObserver = new IntersectionObserver(entries => {
-      var index = sections.indexOf(entries[0].target);
-      activateNavByIndex(navItems[index]);
-    }, {
-      rootMargin: '0px 0px -100%'
-    });
-
-    for (let i = 0; i < sections.length; i++) {
-      intersectionObserver.observe(sections[i]);
+    function findIndex(entries) {
+      let index = 0;
+      let entry = entries[index];
+      if (entry.boundingClientRect.top > 0) {
+        index = sections.indexOf(entry.target);
+        return index === 0 ? 0 : index - 1;
+      }
+      for (;index < entries.length; index++) {
+        if (entries[index].boundingClientRect.top <= 0) {
+          entry = entries[index];
+        } else {
+          return sections.indexOf(entry.target);
+        }
+      }
+      return sections.indexOf(entry.target);
     }
+
+    function createIntersectionObserver(marginTop) {
+      marginTop = Math.floor(marginTop + 10000);
+      let intersectionObserver = new IntersectionObserver((entries, observe) => {
+        let scrollHeight = document.documentElement.scrollHeight + 100;
+        if (scrollHeight > marginTop) {
+          observe.disconnect();
+          createIntersectionObserver(scrollHeight);
+          return;
+        }
+        let index = findIndex(entries);
+        activateNavByIndex(navItems[index]);
+      }, {
+        rootMargin: marginTop + 'px 0px -100% 0px',
+        threshold : 0
+      });
+      sections.forEach(item => intersectionObserver.observe(item));
+    }
+    createIntersectionObserver(document.documentElement.scrollHeight);
   },
 
   hasMobileUA: function() {
@@ -296,30 +357,37 @@ NexT.utils = {
    * Need for Sidebar/TOC inner scrolling if content taller then viewport.
    */
   initSidebarDimension: function() {
-    var sidebarInner = $('.sidebar-inner');
-    var sidebarPadding = sidebarInner.innerWidth() - sidebarInner.width();
-    var sidebarNavHeight = $('.sidebar-nav').css('display') === 'block' ? $('.sidebar-nav').outerHeight(true) : 0;
+    var sidebarNav = document.querySelector('.sidebar-nav');
+    var sidebarNavHeight = sidebarNav.style.display !== 'none' ? sidebarNav.outerHeight(true) : 0;
     var sidebarOffset = CONFIG.sidebar.offset || 12;
-    var sidebarb2tHeight = CONFIG.back2top.enable && CONFIG.back2top.sidebar ? document.querySelector('.back-to-top').offsetHeight : sidebarOffset;
-    var sidebarSchemePadding = NexT.utils.isPisces() || NexT.utils.isGemini()
-      ? (sidebarPadding * 2) + sidebarNavHeight + sidebarOffset + sidebarb2tHeight
-      : (sidebarPadding * 2) + (sidebarNavHeight / 2);
+    var sidebarb2tHeight = CONFIG.back2top.enable && CONFIG.back2top.sidebar ? document.querySelector('.back-to-top').offsetHeight : 0;
+    var sidebarSchemePadding = CONFIG.sidebarPadding + sidebarNavHeight + sidebarb2tHeight;
+    // Margin of sidebar b2t: 8px -10px -20px, brings a different of 12px.
+    if (NexT.utils.isPisces() || NexT.utils.isGemini()) sidebarSchemePadding += (sidebarOffset * 2) - 12;
     // Initialize Sidebar & TOC Height.
-    var sidebarWrapperHeight = document.body.offsetHeight - sidebarSchemePadding;
-    $('.site-overview-wrap, .post-toc-wrap').css('max-height', sidebarWrapperHeight);
+    var sidebarWrapperHeight = document.body.offsetHeight - sidebarSchemePadding + 'px';
+    document.querySelector('.site-overview-wrap').style.maxHeight = sidebarWrapperHeight;
+    document.querySelector('.post-toc-wrap').style.maxHeight = sidebarWrapperHeight;
   },
 
   updateSidebarPosition: function() {
-    if (!this.isDesktop() || this.isPisces() || this.isGemini()) {
-      this.initSidebarDimension();
-      return;
+    var sidebarNav = document.querySelector('.sidebar-nav');
+    var hasTOC = document.querySelector('.post-toc');
+    if (hasTOC) {
+      sidebarNav.style.display = '';
+      sidebarNav.classList.add('motion-element');
+      document.querySelector('.sidebar-nav-toc').click();
+    } else {
+      sidebarNav.style.display = 'none';
+      sidebarNav.classList.remove('motion-element');
+      document.querySelector('.sidebar-nav-overview').click();
     }
+    NexT.utils.initSidebarDimension();
+    if (!this.isDesktop() || this.isPisces() || this.isGemini()) return;
     // Expand sidebar on post detail page by default, when post has a toc.
-    var $tocContent = $('.post-toc');
     var display = CONFIG.page.sidebar;
     if (typeof display !== 'boolean') {
-      // There's no definition sidebar in the page front-matter
-      var hasTOC = $tocContent.length > 0 && $tocContent.html().trim().length > 0;
+      // There's no definition sidebar in the page front-matter.
       display = CONFIG.sidebar.display === 'always' || (CONFIG.sidebar.display === 'post' && hasTOC);
     }
     if (display) {
@@ -331,11 +399,16 @@ NexT.utils = {
     if (condition) {
       callback();
     } else {
-      $.ajax({
-        url     : url,
-        dataType: 'script',
-        cache   : true
-      }).then(callback);
+      var script = document.createElement('script');
+      script.onload = script.onreadystatechange = function(_, isAbort) {
+        if (isAbort || !script.readyState || /loaded|complete/.test(script.readyState)) {
+          script.onload = script.onreadystatechange = null;
+          script = undefined;
+          if (!isAbort && callback) setTimeout(callback, 0);
+        }
+      };
+      script.src = url;
+      document.head.appendChild(script);
     }
   }
 };

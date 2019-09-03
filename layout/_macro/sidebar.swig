@@ -7,7 +7,7 @@
     </div>
   </div>
 
-  <aside id="sidebar" class="sidebar">
+  <aside class="sidebar">
     <div class="sidebar-inner">
 
       {%- set display_toc = theme.toc.enable and display_toc %}
@@ -19,10 +19,10 @@
       {%- endif %}
 
       <ul class="sidebar-nav motion-element">
-        <li class="sidebar-nav-toc" data-target="post-toc-wrap">
+        <li class="sidebar-nav-toc">
           {{ __('sidebar.toc') }}
         </li>
-        <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+        <li class="sidebar-nav-overview">
           {{ __('sidebar.overview') }}
         </li>
       </ul>

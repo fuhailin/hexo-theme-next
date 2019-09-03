@@ -154,6 +154,11 @@ if (hexo-config('algolia_search.enable')) {
 }
 
 if (hexo-config('local_search.enable')) {
+  .search-loading-icon {
+    margin: 20% auto 0 auto;
+    text-align: center;
+  }
+
   .search-popup {
     ul.search-result-list {
       margin: 0 5px;
@@ -182,7 +187,7 @@ if (hexo-config('local_search.enable')) {
       position: relative;
     }
 
-    .search-input-wrapper {
+    .search-input-container {
       display: inline-block;
       height: 36px;
       line-height: 36px;
