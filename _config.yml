@@ -17,7 +17,7 @@ cache:
   enable: true
 
 # Remove unnecessary files after hexo generate.
-minify: false
+minify: true
 
 # Define custom file paths.
 # Create your custom files in site directory `source/_data` and uncomment needed files below.
@@ -343,7 +343,7 @@ reward_settings:
   # You can show or hide reward in a specific article throuth `reward: true | false` in Front-matter.
   enable: true
   animation: false
-  #comment: Donate comment here.
+  comment: 打赏一次，年薪百万.
 
 reward:
   wechatpay: /images/wechatpay.jpg
@@ -429,7 +429,7 @@ safari_rainbow: false
 custom_scrollbar: true
 
 # Custom Logo (Do not support scheme Mist)
-custom_logo: /uploads/avatar.jpg
+custom_logo:
 
 codeblock:
   # Code Highlight theme
