@@ -1,14 +1,13 @@
-  <article itemscope itemtype="http://schema.org/Article">
   {##################}
   {### POST BLOCK ###}
   {##################}
-  <div class="post-block {% if is_index %}home{% else %}post{% endif %}">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block {% if is_index %}home{% endif %}" lang="{{ post.lang or post.language or config.language }}">
     <link itemprop="mainEntityOfPage" href="{{ config.url }}{{ url_for(post.path) }}">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="{{ url_for(theme.avatar.url or theme.images + '/avatar.gif') }}">
       <meta itemprop="name" content="{{ author }}">
       <meta itemprop="description" content="{{ description }}">
-      <meta itemprop="image" content="{{ url_for( theme.avatar.url | default(theme.images + '/avatar.gif') ) }}">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -17,9 +16,9 @@
 
     {%- if post.header !== false %}
       <header class="post-header">
-        <{%- if theme.seo %}h2{% else %}h1{%- endif %} class="post-title{%- if post.direction and post.direction.toLowerCase() === 'rtl' %} rtl{%- endif %}" itemprop="name headline">{#
-        #}{# Link posts #}{#
-        #}{%- if post.link %}
+        <{%- if theme.seo %}h2{% else %}h1{%- endif %} class="post-title{%- if post.direction and post.direction.toLowerCase() === 'rtl' %} rtl{%- endif %}" itemprop="name headline">
+          {# Link posts #}
+          {%- if post.link %}
             {%- if post.sticky > 0 %}
               <span class="post-sticky-flag" title="{{ __('post.sticky') }}">
                 <i class="fa fa-thumb-tack"></i>
@@ -27,17 +26,17 @@
             {%- endif %}
             {%- set postTitleIcon = '<i class="fa fa-external-link"></i>' %}
             {%- set postText = post.title or post.link %}
-            {{ next_url(post.link, postText + postTitleIcon, {class: 'post-title-link post-title-link-external', itemprop: 'url' }) }}
+            {{ next_url(post.link, postText + postTitleIcon, {class: 'post-title-link post-title-link-external', itemprop: 'url'}) }}
           {% elif is_index %}
             {%- if post.sticky > 0 %}
               <span class="post-sticky-flag" title="{{ __('post.sticky') }}">
                 <i class="fa fa-thumb-tack"></i>
               </span>
             {%- endif %}
-            {{ next_url(post.path, post.title | default(__('post.untitled')), {class: 'post-title-link', itemprop: 'url' }) }}
-          {% else -%}
-            {{- post.title -}}
-            {% include '../_partials/post-edit.swig' %}
+            {{ next_url(post.path, post.title or __('post.untitled'), {class: 'post-title-link', itemprop: 'url'}) }}
+          {%- else %}
+            {{- post.title }}
+            {{- post_edit(post.source) }}
           {%- endif %}
         </{%- if theme.seo %}h2{% else %}h1{%- endif %}>
 
@@ -66,9 +65,7 @@
                 {%- set create_title = __('post.created') + __('symbol.colon') + full_date(post.date) %}
               {%- endif %}
 
-              <time title="{{ create_title }}" itemprop="dateCreated datePublished" datetime="{{ moment(post.date).format() }}">{#
-              #}{{ date(post.date) -}}
-              </time>
+              <time title="{{ create_title }}" itemprop="dateCreated datePublished" datetime="{{ moment(post.date).format() }}">{{ date(post.date) }}</time>
             </span>
           {%- endif %}
 
@@ -81,9 +78,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">{{ __('post.edited') }}</span>
-                <time title="{{ __('post.modified') + __('symbol.colon') + full_date(post.updated) }}" itemprop="dateModified" datetime="{{ moment(post.updated).format() }}">{#
-                #}{{ date(post.updated) -}}
-                </time>
+                <time title="{{ __('post.modified') + __('symbol.colon') + full_date(post.updated) }}" itemprop="dateModified" datetime="{{ moment(post.updated).format() }}">{{ date(post.updated) }}</time>
               </span>
             {%- endif %}
           {%- endif %}
@@ -94,12 +89,12 @@
                 <i class="fa fa-folder-o"></i>
               </span>
               <span class="post-meta-item-text">{{ __('post.in') }}</span>
-              {%- for cat in post.categories %}
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">{#
-                #}<a href="{{ url_for(cat.path) }}" itemprop="url" rel="index">{#
-                  #}<span itemprop="name">{{ cat.name }}</span>{#
-                #}</a>{#
-              #}</span>
+              {%- for cat in post.categories.toArray() %}
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="{{ url_for(cat.path) }}" itemprop="url" rel="index">
+                    <span itemprop="name">{{ cat.name }}</span>
+                  </a>
+                </span>
 
                 {%- set cat_length = post.categories.length %}
                 {%- if cat_length > 1 and loop.index !== cat_length %}
@@ -131,12 +126,12 @@
           {%- endif %}
 
           {%- if not is_index and theme.busuanzi_count.enable and theme.busuanzi_count.post_views %}
-            <span class="post-meta-item" title="{{ __('post.views') }}">
+            <span class="post-meta-item" title="{{ __('post.views') }}" id="busuanzi_container_page_pv" style="display: none;">
               <span class="post-meta-item-icon">
                 <i class="fa fa-{{ theme.busuanzi_count.post_views_icon }}"></i>
               </span>
               <span class="post-meta-item-text">{{ __('post.views') + __('symbol.colon') }}</span>
-              <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>
+              <span id="busuanzi_value_page_pv"></span>
             </span>
           {%- endif %}
 
@@ -168,9 +163,7 @@
           {%- endif %}
 
           {%- if post.description and (not theme.excerpt_description or not is_index) %}
-            <div class="post-description">{#
-              #}{{ post.description }}{#
-            #}</div>
+            <div class="post-description">{{ post.description }}</div>
           {%- endif %}
 
         </div>
@@ -186,7 +179,7 @@
       {%- if post.photos and post.photos.length %}
         <div class="post-gallery" itemscope itemtype="http://schema.org/ImageGallery">
           {%- set COLUMN_NUMBER = 3 %}
-          {%- for photo in post.photos %}
+          {%- for photo in post.photos.toArray() %}
             {%- if loop.index0 % COLUMN_NUMBER === 0 %}<div class="post-gallery-row">{%- endif %}
               <img src="{{ url_for(photo) }}" itemprop="contentUrl">
             {%- if loop.index0 % COLUMN_NUMBER === 2 %}</div>{%- endif %}
@@ -202,7 +195,7 @@
           {{ post.description }}
           <!--noindex-->
           {%- if theme.read_more_btn %}
-            <div class="post-button text-center">
+            <div class="post-button">
               <a class="btn" href="{{ url_for(post.path) }}">
                 {{ __('post.read_more') }} &raquo;
               </a>
@@ -213,8 +206,8 @@
           {{ post.excerpt }}
           <!--noindex-->
           {%- if theme.read_more_btn %}
-            <div class="post-button text-center">
-              <a class="btn" href="{{ url_for(post.path) }}{%- if theme.scroll_to_more %}#more{%- endif %}" rel="contents">
+            <div class="post-button">
+              <a class="btn" href="{{ url_for(post.path) }}#more" rel="contents">
                 {{ __('post.read_more') }} &raquo;
               </a>
             </div>
@@ -233,27 +226,18 @@
     {#####################}
 
     {%- if theme.related_posts.enable and (theme.related_posts.display_in_home or not is_index) %}
-      {% include '../_partials/post/post-related.swig' with { post: post } %}
+      {{ partial('_partials/post/post-related.swig') }}
     {%- endif %}
 
     {%- if not is_index %}
       {{- next_inject('postBodyEnd') }}
 
-      {%- if theme.wechat_subscriber.enable %}
-        {{ partial('../_partials/post/wechat-subscriber.swig', {}, {cache: theme.cache.enable}) }}
-      {%- endif %}
-
-      {%- if post.reward === undefined and theme.reward_settings.enable %}
-        {%- set reward_able = true %}
-      {% else %}
-        {%- set reward_able = post.reward %}
-      {%- endif %}
-      {%- if reward_able %}
-        {{ partial('../_partials/post/post-reward.swig', {}, {cache: theme.cache.enable}) }}
+      {%- if post.reward_settings.enable %}
+        {{ partial('_partials/post/post-reward.swig') }}
       {%- endif %}
 
       {%- if theme.creative_commons.license and theme.creative_commons.post %}
-        {% include '../_partials/post/post-copyright.swig' with { post: post } %}
+        {{ partial('_partials/post/post-copyright.swig') }}
       {%- endif %}
 
       <footer class="post-footer">
@@ -264,13 +248,13 @@
             {%- set tag_indicate = '#' %}
           {%- endif %}
           <div class="post-tags">
-            {%- for tag in post.tags %}
+            {%- for tag in post.tags.toArray() %}
               <a href="{{ url_for(tag.path) }}" rel="tag">{{ tag_indicate }} {{ tag.name }}</a>
             {%- endfor %}
           </div>
         {%- endif %}
 
-        {{ partial('../_partials/post/post-footer.swig', {}, {cache: theme.cache.enable}) }}
+        {{ partial('_partials/post/post-footer.swig', {}, {cache: theme.cache.enable}) }}
 
         {%- if post.prev or post.next %}
           <div class="post-nav">
@@ -296,14 +280,10 @@
       </footer>
     {% else %}
       <footer class="post-footer">
-        {%- set isLast = loop.index % post.per_page === 0 %}
-        {%- if not isLast %}
-          <div class="post-eof"></div>
-        {%- endif %}
+        <div class="post-eof"></div>
       </footer>
     {%- endif %}
-  </div>
+  </article>
   {######################}
   {### END POST BLOCK ###}
   {######################}
-  </article>
